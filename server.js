@@ -98,7 +98,7 @@ app.get('/check/file', (req, resp) => {
 })
 
 app.all('/upload', (req, resp) => {
-  var form = new formidable.IncomingForm({
+  const form = new formidable.IncomingForm({
       uploadDir: 'nodeServer/tmp'
   })
   form.parse(req, function(err, fields, file) {
