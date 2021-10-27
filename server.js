@@ -52,7 +52,7 @@ function isExist(filePath) {
 
 // 获取文件Chunk列表
 async function getChunkList(filePath, folderPath, callback) {
-  let isFileExit = await isExist(folderPath)
+  let isFileExit = await isExist(filePath)
   let result = {}
   // 如果文件已在存在, 不用再继续上传, 真接秒传
   if (isFileExit) {

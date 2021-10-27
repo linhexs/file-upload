@@ -134,7 +134,7 @@ const Upload = () => {
       message.success('文件已秒传')
       return
     }
-    // 3：检查并上传MD5
+    // 3：检查并上传切片
     await checkAndUploadChunk(file, fileMd5Value, data.chunkList)
     // 4：通知服务器所有服务器分片已经上传完成
     notifyServer(file, fileMd5Value)
