@@ -156,8 +156,11 @@ async function mergeFiles(srcDir, targetDir, newFileName) {
   for (let i = 0; i < fileArr.length; i++) {
       fileArr[i] = srcDir + '/' + fileArr[i]
   }
-  concat(fileArr, path.join(targetDir, newFileName), () => {
-      console.log('合成成功!')
+  concat(fileArr, path.join(targetDir, newFileName), err => {
+      if(err) {
+          return false
+      }
+      return true
   })
 }
 
@@ -166,10 +169,9 @@ app.all('/merge', (req, resp) => {
   let query = req.query
   let md5 = query.md5
   let fileName = query.fileName
-  console.log(md5, fileName)
-  mergeFiles(path.join(uploadDir, md5), uploadDir, fileName)
+  const res = mergeFiles(path.join(uploadDir, md5), uploadDir, fileName)
   resp.send({
-      stat: 1
+      stat: res ? 1 : 0
   })
 })
 
