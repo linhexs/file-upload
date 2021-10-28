@@ -30,7 +30,10 @@ function reducer(state, action) {
 const Upload = () => {
   const inputRef = useRef(null)
   const [state, dispatch] = useReducer(reducer, initialState)
-  const [chunkSize] = useState(5 * 1024 * 1024)
+  const chunks = 100; // 切成100份
+  const chunkSize = 5 * 1024 * 1024 // 切片大小
+  let checkCurrentChunk = 0; // 检查，当前切片
+  let uploadCurrentChunk = 0 // 上传，当前切片
 
   /**
    * 将文件转换成md5并进行切片
@@ -41,17 +44,15 @@ const Upload = () => {
       // 文件截取
       let blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
         chunkSize = file?.size / 100,
-        chunks = 100,
-        currentChunk = 0,
         spark = new SparkMD5.ArrayBuffer(),
         fileReader = new FileReader();
 
       fileReader.onload = function (e) {
-        console.log('read chunk nr', currentChunk + 1, 'of', chunks);
+        console.log('read chunk nr', checkCurrentChunk + 1, 'of', chunks);
         spark.append(e.target.result);
-        currentChunk += 1;
+        checkCurrentChunk += 1;
 
-        if (currentChunk < chunks) {
+        if (checkCurrentChunk < chunks) {
           loadNext();
         } else {
           let result = spark.end()
@@ -64,17 +65,18 @@ const Upload = () => {
       };
 
       const loadNext = () => {
-        const start = currentChunk * chunkSize,
+        const start = checkCurrentChunk * chunkSize,
           end = ((start + chunkSize) >= file.size) ? file.size : start + chunkSize;
 
         // 文件切片
         fileReader.readAsArrayBuffer(blobSlice.call(file, start, end));
         // 检查进度条
-        dispatch({ type: 'check', checkPercent: currentChunk + 1 })
+        dispatch({ type: 'check', checkPercent: checkCurrentChunk + 1 })
       }
 
       loadNext();
     })
+    
   }
 
   /**
@@ -89,7 +91,8 @@ const Upload = () => {
   }
 
   // 上传chunk
-  function upload(i, file, fileMd5Value, chunks) {
+  function upload({ i, file, fileMd5Value, chunks }) {
+    uploadCurrentChunk = 0
     //构造一个表单，FormData是HTML5新增的
     let end = (i + 1) * chunkSize >= file.size ? file.size : (i + 1) * chunkSize
     let form = new FormData()
@@ -101,7 +104,13 @@ const Upload = () => {
       method: 'post',
       url: BaseUrl + "/upload",
       data: form
-    });
+    }).then(({ data }) => {
+      if (data.stat) {
+        uploadCurrentChunk = uploadCurrentChunk + 1
+        const uploadPercent = Math.ceil((uploadCurrentChunk / chunks) * 100)
+        dispatch({ type: 'upload', uploadPercent })
+      }
+    })
   }
 
   /**
@@ -111,16 +120,18 @@ const Upload = () => {
    */
   async function checkAndUploadChunk(file, fileMd5Value, chunkList) {
     let chunks = Math.ceil(file.size / chunkSize)
-    let hasUploaded = chunkList.length
+    const requestList = []
     for (let i = 0; i < chunks; i++) {
       let exit = chunkList.indexOf(i + "") > -1
-      // 如果不存在, 上传
+      // 如果不存在，则上传
       if (!exit) {
-        await upload(i, file, fileMd5Value, chunks)
-        hasUploaded++
-        let radio = Math.floor((hasUploaded / chunks) * 100)
-        dispatch({ type: 'upload', uploadPercent: radio })
+        requestList.push(upload({ i, file, fileMd5Value, chunks }))
       }
+    }
+
+    // 并发上传
+    if (requestList?.length) {
+      await Promise.all(requestList)
     }
   }
 
@@ -155,6 +166,7 @@ const Upload = () => {
       }
     })
   }
+
 
   useEffect(() => {
     const changeFile = ({ target }) => {
