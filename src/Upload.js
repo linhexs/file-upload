@@ -28,8 +28,8 @@ function reducer(state, action) {
 }
 
 const Upload = () => {
-  const inputRef = useRef(null)
   const [state, dispatch] = useReducer(reducer, initialState)
+  const inputRef = useRef(null)
   const chunks = 100; // 切成100份
   const chunkSize = 5 * 1024 * 1024 // 切片大小
   let checkCurrentChunk = 0; // 检查，当前切片
@@ -166,7 +166,6 @@ const Upload = () => {
       }
     })
   }
-
 
   useEffect(() => {
     const changeFile = ({ target }) => {
