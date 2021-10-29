@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useReducer } from 'react'
+import React, { useRef, useEffect, useReducer } from 'react'
 import { Button, Progress, message } from 'antd';
 import { SlideDown } from 'react-slidedown'
 import SparkMD5 from 'spark-md5'
@@ -179,6 +179,7 @@ const Upload = () => {
     return () => {
       document.removeEventListener("change", changeFile)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
